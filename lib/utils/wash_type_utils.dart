@@ -1,5 +1,3 @@
-
-
 import '../models/wash_transaction.dart';
 
 String getWashTypeName(WashType washType) {
@@ -17,6 +15,6 @@ String getWashTypeName(WashType washType) {
     case WashType.complete:
       return 'كامل';
     default:
-      return '';
+      return 'غير معروف';
   }
 }

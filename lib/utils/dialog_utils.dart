@@ -1,21 +1,19 @@
 import 'package:flutter/material.dart';
-
 import '../models/wash_transaction.dart';
 
 
 void showDeleteTransactionDialog({
   required BuildContext context,
   required WashTransaction transaction,
-  required List<WashTransaction> transactions,
-  required VoidCallback onUpdate,
+  required Function onDelete,
 }) {
   showDialog(
     context: context,
     builder: (context) => Directionality(
       textDirection: TextDirection.rtl,
       child: AlertDialog(
-        title: Text('حذف المعاملة'),
-        content: Text('هل أنت متأكد من رغبتك في حذف هذه المعاملة؟'),
+        title: Text('تأكيد الحذف'),
+        content: Text('هل تريد حذف معاملة الغسيل رقم ${transaction.transactionNumber}؟'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -23,12 +21,11 @@ void showDeleteTransactionDialog({
           ),
           ElevatedButton(
             onPressed: () {
-              transactions.remove(transaction); // listeyi dışarıdan aldık
-              onUpdate(); // örneğin setState() veya filtreleme fonksiyonu çağrılır
+              onDelete();
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('تم حذف المعاملة'),
+                  content: Text('تم حذف المعاملة بنجاح'),
                   backgroundColor: Colors.green,
                 ),
               );
@@ -41,3 +38,4 @@ void showDeleteTransactionDialog({
     ),
   );
 }
+

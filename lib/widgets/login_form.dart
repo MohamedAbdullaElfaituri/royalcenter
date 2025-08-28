@@ -99,7 +99,7 @@ class _LoginFormState extends State<LoginForm> with TickerProviderStateMixin {
           transitionDuration: const Duration(milliseconds: 900),
           pageBuilder: (_, __, ___) => Directionality(
             textDirection: TextDirection.rtl,
-            child: Dashboard(),
+            child: DashboardScreen(),
           ),
         ),
       );
