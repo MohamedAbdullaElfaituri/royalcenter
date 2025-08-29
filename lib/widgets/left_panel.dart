@@ -1,8 +1,8 @@
-import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 
-// ================== FeatureChip ==================
+// ================== وسم الميزة (FeatureChip) ==================
+// عنصر صغير لإظهار ميزة (نص قصير) داخل حاوية مزينة
 class FeatureChip extends StatelessWidget {
   final String text;
   const FeatureChip({super.key, required this.text});
@@ -42,7 +42,8 @@ class FeatureChip extends StatelessWidget {
   }
 }
 
-// ================== LeftPanel ==================
+// ================== اللوحة الجانبية (LeftPanel) ==================
+// هذه اللوحة تعرض الشعار، العنوان، وصف النظام والميزات
 class LeftPanel extends StatelessWidget {
   const LeftPanel({super.key});
 
@@ -71,7 +72,7 @@ class LeftPanel extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // شعار دائري
+              // ================== الشعار الدائري ==================
               Container(
                 width: 140,
                 height: 140,
@@ -98,6 +99,7 @@ class LeftPanel extends StatelessWidget {
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
+                    // تأثير داخلي شفاف
                     Container(
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
@@ -115,6 +117,7 @@ class LeftPanel extends StatelessWidget {
                       size: 60,
                       color: Colors.white,
                     ),
+                    // نجمة صغيرة للتزيين
                     Positioned(
                       top: 20,
                       right: 20,
@@ -133,7 +136,7 @@ class LeftPanel extends StatelessWidget {
 
               const SizedBox(height: 28),
 
-              // العنوان
+              // ================== العنوان ==================
               ShaderMask(
                 shaderCallback: (bounds) {
                   return const LinearGradient(
@@ -160,6 +163,7 @@ class LeftPanel extends StatelessWidget {
 
               const SizedBox(height: 16),
 
+              // ================== الوصف ==================
               Text(
                 'نظام متكامل لإدارة مغاسل السيارات باحترافية عالية',
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
@@ -179,7 +183,7 @@ class LeftPanel extends StatelessWidget {
 
               const SizedBox(height: 28),
 
-              // الميزات
+              // ================== الميزات ==================
               Column(
                 children: const [
                   FeatureChip(text: '📊 تقارير يومية مفصلة'),
@@ -194,6 +198,7 @@ class LeftPanel extends StatelessWidget {
 
               const SizedBox(height: 20),
 
+              // ================== جملة ختامية ==================
               Text(
                 'نحو إدارة أكثر ذكاءً',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(

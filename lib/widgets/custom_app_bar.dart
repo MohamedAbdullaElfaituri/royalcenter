@@ -1,20 +1,23 @@
 import 'package:flutter/material.dart';
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
-  final bool hasTransactions;
-  final VoidCallback? onSave;
-  final VoidCallback? onClear;
+  final bool hasTransactions; // هل توجد معاملات حالية
+  final VoidCallback? onSave; // حدث عند الضغط على زر الحفظ
+  final VoidCallback? onClear; // حدث عند الضغط على زر المسح
+  final List<Color>? gradientColors; // ألوان الخلفية (يمكن تخصيصها)
 
   const CustomAppBar({
     Key? key,
     required this.hasTransactions,
     this.onSave,
     this.onClear,
+    this.gradientColors, // لو ما انمررت، يستخدم ألوان افتراضية
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return AppBar(
+      // ====== العنوان مع أيقونة السيارة ======
       title: RichText(
         text: TextSpan(
           children: [
@@ -26,7 +29,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                   Shadow(
                     blurRadius: 4.0,
                     color: Colors.black.withOpacity(0.3),
-                    offset: const Offset(1.0, 1.0),
+                    offset: const Offset(1, 1),
                   ),
                 ],
               ),
@@ -41,7 +44,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                   Shadow(
                     blurRadius: 2.0,
                     color: Colors.black.withOpacity(0.2),
-                    offset: const Offset(1.0, 1.0),
+                    offset: const Offset(1, 1),
                   ),
                 ],
               ),
@@ -50,73 +53,79 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
         ),
       ),
       centerTitle: true,
-      backgroundColor: Colors.teal[700],
-      foregroundColor: Colors.white,
+      backgroundColor: Colors.transparent, // نجعلها شفافة مع Gradient
       elevation: 8,
+      foregroundColor: Colors.white,
       shadowColor: Colors.black.withOpacity(0.6),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(
           bottom: Radius.circular(30),
         ),
       ),
+
+      // ====== الأزرار (الحفظ و المسح) ======
       actions: [
         if (hasTransactions) ...[
-          // Save button with enhanced styling
-          Container(
-            margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-            decoration: BoxDecoration(
-              color: Colors.teal[500],
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.save_rounded, size: 24),
-              onPressed: onSave,
-              tooltip: 'حفظ السجل اليومي',
-              color: Colors.white,
-            ),
+          // زر الحفظ
+          _buildActionButton(
+            icon: Icons.save_rounded,
+            tooltip: 'حفظ السجل اليومي',
+            color: Colors.teal[500],
+            onPressed: onSave,
           ),
-          // Clear button with enhanced styling
-          Container(
-            margin: const EdgeInsets.only(right: 8, top: 8, bottom: 8),
-            decoration: BoxDecoration(
-              color: Colors.red[400],
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.delete_rounded, size: 24),
-              onPressed: onClear,
-              tooltip: 'مسح جميع المعاملات',
-              color: Colors.white,
-            ),
+          // زر المسح
+          _buildActionButton(
+            icon: Icons.delete_rounded,
+            tooltip: 'مسح جميع المعاملات',
+            color: Colors.red[400],
+            onPressed: onClear,
           ),
         ],
       ],
+
+      // ====== خلفية متدرجة ======
       flexibleSpace: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Colors.teal[700]!,
-              Colors.teal[600]!,
-              Colors.teal[700]!,
-            ],
+            colors: gradientColors ??
+                [
+                  Colors.teal[700]!,
+                  Colors.teal[600]!,
+                  Colors.teal[700]!,
+                ],
           ),
         ),
+      ),
+    );
+  }
+
+  // دالة مساعدة لبناء زر في الـ AppBar
+  Widget _buildActionButton({
+    required IconData icon,
+    required String tooltip,
+    required Color? color,
+    required VoidCallback? onPressed,
+  }) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: IconButton(
+        icon: Icon(icon, size: 24),
+        onPressed: onPressed,
+        tooltip: tooltip,
+        color: Colors.white,
       ),
     );
   }

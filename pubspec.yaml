@@ -1,5 +1,5 @@
 name: royalcenter
-description: "A new Flutter project."
+description: "منظومة الغسيل الماليّة"
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -13,26 +13,38 @@ dependencies:
   pdf: ^3.11.0
   printing: ^5.11.0
   cupertino_icons: ^1.0.8
+  path_provider: ^2.1.4
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  intl: ^0.18.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.14.4
+  build_runner: ^2.5.0
+  hive_generator: ^2.0.0
 
 flutter:
   uses-material-design: true
 
-  # Assets - DOĞRU ŞEKİLDE TANIMLAYIN
   assets:
     - assets/fonts/NotoNaskhArabic-Regular.ttf
     - assets/fonts/NotoNaskhArabic-Bold.ttf
-    # Eğer images klasörünüzde dosyalar varsa:
     - assets/images/
 
-  # Fonts - DOĞRU ŞEKİLDE TANIMLAYIN
   fonts:
     - family: NotoArabic
       fonts:
         - asset: assets/fonts/NotoNaskhArabic-Regular.ttf
         - asset: assets/fonts/NotoNaskhArabic-Bold.ttf
           weight: 700
+
+flutter_icons:
+  android: true
+  ios: true
+  windows:
+    generator: true
+  image_path: "assets/images/Logo .jpeg"  # صورة اللوجو
+  adaptive_icon_background: "#ffffff"   # خلفية للأيقونة القابلة للتكيف (اختياري)

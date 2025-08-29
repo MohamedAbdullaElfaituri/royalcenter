@@ -2,14 +2,26 @@ import 'package:flutter/material.dart';
 
 class FeatureChip extends StatelessWidget {
   final String text;
-  const FeatureChip({super.key, required this.text});
+  final IconData? icon; // أيقونة اختيارية
+  final Color backgroundColor;
+  final Color textColor;
+  final EdgeInsetsGeometry padding;
+
+  const FeatureChip({
+    super.key,
+    required this.text,
+    this.icon,
+    this.backgroundColor = const Color.fromRGBO(0, 0, 0, 0.7),
+    this.textColor = Colors.white,
+    this.padding = const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      padding: padding,
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.7), // خلفية أغمق لتباين أعلى
+        color: backgroundColor,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.white.withOpacity(0.25)),
         boxShadow: [
@@ -20,20 +32,32 @@ class FeatureChip extends StatelessWidget {
           ),
         ],
       ),
-      child: Text(
-        text,
-        style: const TextStyle(
-          color: Colors.white, // أبيض صافي لقراءة أفضل
-          fontWeight: FontWeight.bold,
-          fontSize: 14,
-          shadows: [
-            Shadow(
-              color: Colors.black45,
-              blurRadius: 4,
-              offset: Offset(0, 1),
-            ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 18, color: textColor),
+            const SizedBox(width: 6),
           ],
-        ),
+          Flexible(
+            child: Text(
+              text,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: textColor,
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+                shadows: const [
+                  Shadow(
+                    color: Colors.black45,
+                    blurRadius: 4,
+                    offset: Offset(0, 1),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

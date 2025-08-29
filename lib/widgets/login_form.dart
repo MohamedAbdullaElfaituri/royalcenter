@@ -12,16 +12,21 @@ class LoginForm extends StatefulWidget {
 }
 
 class _LoginFormState extends State<LoginForm> with TickerProviderStateMixin {
+  // حقول الإدخال
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
+
+  // مفتاح التحقق من صحة النموذج
   final _formKey = GlobalKey<FormState>();
 
+  // للتحكم في أنيميشن زر الدخول
   late AnimationController _buttonController;
 
-  bool _isLoading = false;
-  bool _loginSuccess = false;
-  bool _obscurePassword = true;
-  bool _rememberMe = false;
+  // حالات واجهة تسجيل الدخول
+  bool _isLoading = false;     // جاري التحميل
+  bool _loginSuccess = false;  // نجاح تسجيل الدخول
+  bool _obscurePassword = true; // إخفاء كلمة المرور
+  bool _rememberMe = false;    // خيار "تذكرني"
 
   @override
   void initState() {
@@ -30,7 +35,7 @@ class _LoginFormState extends State<LoginForm> with TickerProviderStateMixin {
       vsync: this,
       duration: const Duration(milliseconds: 800),
     );
-    _loadSavedCredentials();
+    _loadSavedCredentials(); // تحميل بيانات المستخدم إذا سبق أن اختار "تذكرني"
   }
 
   @override
@@ -41,6 +46,7 @@ class _LoginFormState extends State<LoginForm> with TickerProviderStateMixin {
     super.dispose();
   }
 
+  // 🔹 تحميل بيانات الاعتماد من SharedPreferences
   Future<void> _loadSavedCredentials() async {
     final prefs = await SharedPreferences.getInstance();
     final savedRemember = prefs.getBool('rememberMe') ?? false;
@@ -54,6 +60,7 @@ class _LoginFormState extends State<LoginForm> with TickerProviderStateMixin {
     }
   }
 
+  // 🔹 حفظ بيانات المستخدم إذا فعّل "تذكرني"
   Future<void> _saveCredentials(String username, String password) async {
     final prefs = await SharedPreferences.getInstance();
     if (_rememberMe) {
@@ -67,16 +74,17 @@ class _LoginFormState extends State<LoginForm> with TickerProviderStateMixin {
     }
   }
 
+  // 🔹 التحقق من صحة النموذج ومحاولة تسجيل الدخول
   Future<bool> _submit() async {
     if (!_formKey.currentState!.validate()) return false;
 
-    // زر التحميل
+    // بدء أنيميشن زر التحميل
     _buttonController.forward();
 
-    // محاكاة انتظار الشبكة
+    // محاكاة طلب سيرفر (شبكة)
     await Future.delayed(const Duration(seconds: 2));
 
-    // هنا تحقق حقيقي (الآن: بيانات ثابتة)
+    // تحقق من اسم المستخدم وكلمة المرور (ثابتة هنا للتجربة)
     final ok = _usernameController.text.trim() == 'admin' &&
         _passwordController.text == '123456';
 
@@ -85,12 +93,13 @@ class _LoginFormState extends State<LoginForm> with TickerProviderStateMixin {
         _loginSuccess = true;
       });
 
-      // حفظ البيانات لو Remember Me متفعّل
+      // حفظ بيانات الدخول إذا اختار المستخدم "تذكرني"
       await _saveCredentials(
         _usernameController.text.trim(),
         _passwordController.text,
       );
 
+      // تأخير بسيط لإظهار نجاح الدخول
       await Future.delayed(const Duration(milliseconds: 700));
 
       if (!mounted) return true;
@@ -105,6 +114,7 @@ class _LoginFormState extends State<LoginForm> with TickerProviderStateMixin {
       );
       return true;
     } else {
+      // في حال فشل الدخول
       setState(() {
         _isLoading = false;
       });
@@ -114,6 +124,7 @@ class _LoginFormState extends State<LoginForm> with TickerProviderStateMixin {
     }
   }
 
+  // 🔹 إظهار رسالة خطأ
   void _showErrorSnack(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -125,6 +136,7 @@ class _LoginFormState extends State<LoginForm> with TickerProviderStateMixin {
     );
   }
 
+  // 🔹 إظهار رسالة عادية (معلومة)
   void _showInfo(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -135,6 +147,7 @@ class _LoginFormState extends State<LoginForm> with TickerProviderStateMixin {
     );
   }
 
+  // 🔹 الضغط على زر "تسجيل الدخول"
   void _handleLogin() async {
     setState(() {
       _isLoading = true;
@@ -160,6 +173,7 @@ class _LoginFormState extends State<LoginForm> with TickerProviderStateMixin {
     }
   }
 
+  // 🔹 نافذة استعادة كلمة المرور
   void _showForgotPasswordDialog() {
     showDialog(
       context: context,
@@ -167,8 +181,7 @@ class _LoginFormState extends State<LoginForm> with TickerProviderStateMixin {
         final emailCtrl = TextEditingController();
         return Dialog(
           backgroundColor: Colors.white.withOpacity(0.5),
-          shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           child: Padding(
             padding: const EdgeInsets.all(24),
             child: Column(
@@ -203,8 +216,7 @@ class _LoginFormState extends State<LoginForm> with TickerProviderStateMixin {
                     FilledButton(
                       onPressed: () {
                         Navigator.pop(ctx);
-                        _showInfo(
-                            'تم إرسال رابط الاستعادة إلى بريدك الإلكتروني');
+                        _showInfo('تم إرسال رابط الاستعادة إلى بريدك الإلكتروني');
                       },
                       child: const Text('إرسال'),
                     ),
@@ -242,7 +254,7 @@ class _LoginFormState extends State<LoginForm> with TickerProviderStateMixin {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // عنوان
+              // 🔹 العنوان الرئيسي
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -279,6 +291,7 @@ class _LoginFormState extends State<LoginForm> with TickerProviderStateMixin {
 
               const SizedBox(height: 24),
 
+              // 🔹 حقل اسم المستخدم
               TextFormField(
                 controller: _usernameController,
                 textInputAction: TextInputAction.next,
@@ -302,6 +315,7 @@ class _LoginFormState extends State<LoginForm> with TickerProviderStateMixin {
 
               const SizedBox(height: 16),
 
+              // 🔹 حقل كلمة المرور
               TextFormField(
                 controller: _passwordController,
                 obscureText: _obscurePassword,
@@ -344,6 +358,7 @@ class _LoginFormState extends State<LoginForm> with TickerProviderStateMixin {
 
               const SizedBox(height: 20),
 
+              // 🔹 رابط "نسيت كلمة المرور"
               Align(
                 alignment: Alignment.centerLeft,
                 child: TextButton(
@@ -357,6 +372,7 @@ class _LoginFormState extends State<LoginForm> with TickerProviderStateMixin {
 
               const SizedBox(height: 16),
 
+              // 🔹 زر تسجيل الدخول
               SizedBox(
                 height: 56,
                 child: AnimatedBuilder(
@@ -398,7 +414,9 @@ class _LoginFormState extends State<LoginForm> with TickerProviderStateMixin {
                             const SizedBox(width: 8),
                           ],
                           Text(
-                            _loginSuccess ? 'تم الدخول' : 'دخول إلى النظام',
+                            _loginSuccess
+                                ? 'تم الدخول'
+                                : 'دخول إلى النظام',
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
@@ -415,6 +433,7 @@ class _LoginFormState extends State<LoginForm> with TickerProviderStateMixin {
 
               const SizedBox(height: 20),
 
+              // 🔹 خيار "تذكرني"
               Row(
                 children: [
                   Checkbox(
@@ -424,8 +443,7 @@ class _LoginFormState extends State<LoginForm> with TickerProviderStateMixin {
                         _rememberMe = value ?? false;
                       });
                     },
-                    fillColor:
-                    MaterialStateProperty.all(Colors.blue.shade700),
+                    fillColor: MaterialStateProperty.all(Colors.blue.shade700),
                     checkColor: Colors.white,
                   ),
                   const Text('تذكرني على هذا الجهاز',
