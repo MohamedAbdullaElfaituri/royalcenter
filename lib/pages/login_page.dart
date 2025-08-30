@@ -1,10 +1,11 @@
 import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:royalcenter/pages/dashboard_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/animated_background.dart';
 import '../widgets/left_panel.dart' hide LeftPanel;
 import '../widgets/login_form.dart';
-
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -35,6 +36,19 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   void dispose() {
     _cardController.dispose();
     super.dispose();
+  }
+
+  // 🔹 دالة لتخزين حالة تسجيل الدخول
+  Future<void> _onLoginSuccess() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('isLoggedIn', true);
+
+    if (!mounted) return;
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) =>  DashboardScreen()),
+    );
   }
 
   @override
@@ -76,8 +90,12 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                     Expanded(
                       flex: 5,
                       child: SlideTransition(
-                        position: Tween<Offset>(begin: const Offset(0.3, 0), end: Offset.zero)
-                            .animate(CurvedAnimation(parent: _cardController, curve: Curves.easeOut)),
+                        position: Tween<Offset>(
+                          begin: const Offset(0.3, 0),
+                          end: Offset.zero,
+                        ).animate(
+                          CurvedAnimation(parent: _cardController, curve: Curves.easeOut),
+                        ),
                         child: const LeftPanel(),
                       ),
                     ),
@@ -88,9 +106,14 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                     Expanded(
                       flex: 6,
                       child: SlideTransition(
-                        position: Tween<Offset>(begin: const Offset(-0.3, 0), end: Offset.zero)
-                            .animate(CurvedAnimation(parent: _cardController, curve: Curves.easeOut)),
-                        child: LoginForm(),
+                        position: Tween<Offset>(
+                          begin: const Offset(-0.3, 0),
+                          end: Offset.zero,
+                        ).animate(
+                          CurvedAnimation(parent: _cardController, curve: Curves.easeOut),
+                        ),
+                        // 🔹 هنا مررت callback
+                        child: LoginForm(onLoginSuccess: _onLoginSuccess),
                       ),
                     ),
                   ],

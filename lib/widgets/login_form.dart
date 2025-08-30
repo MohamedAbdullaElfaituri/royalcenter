@@ -2,10 +2,11 @@ import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../pages/dashboard_page.dart';
 
 class LoginForm extends StatefulWidget {
-  const LoginForm({super.key});
+  final Future<void> Function()? onLoginSuccess; // 🔹 إضافة callback
+
+  const LoginForm({super.key, this.onLoginSuccess});
 
   @override
   State<LoginForm> createState() => _LoginFormState();
@@ -103,15 +104,12 @@ class _LoginFormState extends State<LoginForm> with TickerProviderStateMixin {
       await Future.delayed(const Duration(milliseconds: 700));
 
       if (!mounted) return true;
-      Navigator.of(context).pushReplacement(
-        PageRouteBuilder(
-          transitionDuration: const Duration(milliseconds: 900),
-          pageBuilder: (_, __, ___) => Directionality(
-            textDirection: TextDirection.rtl,
-            child: DashboardScreen(),
-          ),
-        ),
-      );
+
+      // 🔹 الآن نستدعي الـ callback بدلاً من التنقل من هنا
+      if (widget.onLoginSuccess != null) {
+        await widget.onLoginSuccess!();
+      }
+
       return true;
     } else {
       // في حال فشل الدخول

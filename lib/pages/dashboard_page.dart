@@ -1,4 +1,3 @@
-// dashboard_screen.dart
 import 'package:flutter/material.dart';
 import 'package:royalcenter/models/wash_transaction.dart';
 import 'package:royalcenter/pages/budget_management_screen.dart';
@@ -138,20 +137,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return expenses.fold(0, (sum, expense) => sum + expense.amount);
   }
 
-  // دالة لإضافة مصاريف جديدة
-  void _addExpense() {
-    final description = expenseDescriptionController.text;
-    final amount = double.tryParse(expenseAmountController.text) ?? 0;
-
-    if (description.isNotEmpty && amount > 0) {
-      setState(() {
-        expenses.add(Expense(description: description, amount: amount));
-        expenseDescriptionController.clear();
-        expenseAmountController.clear();
-      });
-    }
-  }
-
   void _openBudgetManagement() async {
     double totalIncome = todayTransactions.fold(0, (sum, transaction) => sum + transaction.price);
 
@@ -175,18 +160,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
               owner2WithdrawnController.text = owner2.toStringAsFixed(2);
             });
           },
-          totalIncome: totalIncome, // إضافة هذه المعلمة
-          transactions: todayTransactions, // إضافة هذه المعلمة
+          totalIncome: totalIncome,
+          transactions: todayTransactions,
         ),
       ),
     );
-  }
-
-  // دالة لحذف مصاريف
-  void _removeExpense(int index) {
-    setState(() {
-      expenses.removeAt(index);
-    });
   }
 
   Future<void> _saveDailyRecord() async {
@@ -455,35 +433,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           onSave: _saveDailyRecord,
           onClear: _clearAllTransactions,
         ),
-        floatingActionButton: Column(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            if (todayTransactions.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 16.0),
-                child: FloatingActionButton.extended(
-                  onPressed: _openBudgetManagement,
-                  icon: Icon(Icons.account_balance_wallet, size: 24),
-                  label: Text('إدارة الميزانية'),
-                  backgroundColor: Colors.deepPurple,
-                  foregroundColor: Colors.white,
-                  elevation: 4,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-              ),
-            FloatingActionButton(
-              onPressed: _showAddTransactionDialog,
-              child: Icon(Icons.add, size: 28),
-              backgroundColor: _primaryColor,
-              elevation: 4,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
-          ],
-        ),
+        floatingActionButton: _buildFloatingActionButtons(),
         body: _isLoading
             ? Center(
           child: CircularProgressIndicator(
@@ -507,106 +457,152 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     totalIncome: totalIncome,
                     washTypeCounts: washTypeCounts,
                   ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 8,
-                          spreadRadius: 1,
-                        ),
-                      ],
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12.0),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: searchController,
-                              decoration: InputDecoration(
-                                hintText: 'ابحث في معاملات اليوم...',
-                                hintStyle: TextStyle(color: Colors.grey[600]),
-                                prefixIcon: Icon(Icons.search, color: _primaryColor),
-                                border: InputBorder.none,
-                                contentPadding: const EdgeInsets.symmetric(vertical: 16),
-                              ),
-                              style: TextStyle(color: _secondaryColor),
-                            ),
-                          ),
-                          if (todayTransactions.isNotEmpty)
-                            IconButton(
-                              icon: Icon(Icons.filter_list, color: _primaryColor),
-                              tooltip: 'خيارات التصفية والترتيب',
-                              onPressed: () {
-                                showFilterOptionsDialog(
-                                  context: context,
-                                  sortColumn: sortColumn,
-                                  sortAscending: sortAscending,
-                                  onSort: _onSort,
-                                );
-                              },
-                            ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                todayTransactions.isEmpty
-                    ? Container(
-                  height: MediaQuery.of(context).size.height * 0.6,
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.local_car_wash,
-                          size: 80,
-                          color: Colors.grey[400],
-                        ),
-                        const SizedBox(height: 20),
-                        Text(
-                          'لا توجد معاملات حتى الآن',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'انقر على زر (+) لإضافة معاملة جديدة',
-                          style: TextStyle(
-                            color: Colors.grey[500],
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                )
-                    : TransactionsTable(
-                  transactions: filteredTransactions,
-                  sortColumn: sortColumn,
-                  sortAscending: sortAscending,
-                  onDelete: (transaction) {
-                    setState(() {
-                      todayTransactions.remove(transaction);
-                      _filterTransactions();
-                    });
-                  },
-                  onPrint: (transaction) {
-                    _printTransaction(transaction);
-                  },
-                ),
+                _buildSearchAndFilterSection(),
+                _buildTransactionsContent(),
                 const SizedBox(height: 20),
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  // بناء أزرار الفعل العائمة
+  Widget _buildFloatingActionButtons() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        if (todayTransactions.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 16.0),
+            child: FloatingActionButton.extended(
+              onPressed: _openBudgetManagement,
+              icon: Icon(Icons.account_balance_wallet, size: 24),
+              label: Text('إدارة الميزانية'),
+              backgroundColor: Colors.deepPurple,
+              foregroundColor: Colors.white,
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+          ),
+        FloatingActionButton(
+          onPressed: _showAddTransactionDialog,
+          child: Icon(Icons.add, size: 28),
+          backgroundColor: _primaryColor,
+          elevation: 4,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // بناء قسم البحث والتصفية
+  Widget _buildSearchAndFilterSection() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 8,
+              spreadRadius: 1,
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12.0),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: searchController,
+                  decoration: InputDecoration(
+                    hintText: 'ابحث في معاملات اليوم...',
+                    hintStyle: TextStyle(color: Colors.grey[600]),
+                    prefixIcon: Icon(Icons.search, color: _primaryColor),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                  style: TextStyle(color: _secondaryColor),
+                ),
+              ),
+              if (todayTransactions.isNotEmpty)
+                IconButton(
+                  icon: Icon(Icons.filter_list, color: _primaryColor),
+                  tooltip: 'خيارات التصفية والترتيب',
+                  onPressed: () {
+                    showFilterOptionsDialog(
+                      context: context,
+                      sortColumn: sortColumn,
+                      sortAscending: sortAscending,
+                      onSort: _onSort,
+                    );
+                  },
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // بناء محتوى المعاملات
+  Widget _buildTransactionsContent() {
+    return todayTransactions.isEmpty
+        ? _buildEmptyState()
+        : TransactionsTable(
+      transactions: filteredTransactions,
+      sortColumn: sortColumn,
+      sortAscending: sortAscending,
+      onDelete: (transaction) {
+        setState(() {
+          todayTransactions.remove(transaction);
+          _filterTransactions();
+        });
+      },
+      onPrint: _printTransaction,
+    );
+  }
+
+  // بناء واجهة الحالة الفارغة
+  Widget _buildEmptyState() {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.6,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.local_car_wash,
+              size: 80,
+              color: Colors.grey[400],
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'لا توجد معاملات حتى الآن',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey[600],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'انقر على زر (+) لإضافة معاملة جديدة',
+              style: TextStyle(
+                color: Colors.grey[500],
+                fontSize: 14,
+              ),
+            ),
+          ],
         ),
       ),
     );
