@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import '../models/wash_transaction.dart';
-import '../utils/wash_type_utils.dart';
-import '../utils/car_size_utils.dart';
 
 void showAddTransactionDialog({
   required BuildContext context,
@@ -47,7 +45,6 @@ class __AddTransactionDialogContentState extends State<_AddTransactionDialogCont
 
   final Color _primaryColor = Colors.teal;
   final Color _secondaryColor = Colors.blueGrey;
-  final Color _accentColor = Colors.orange;
 
   @override
   void initState() {
@@ -95,6 +92,46 @@ class __AddTransactionDialogContentState extends State<_AddTransactionDialogCont
       default: return 15.0;
     }
   }
+  void showCustomSnackBar(BuildContext context, String message, {Color backgroundColor = Colors.green}) {
+    final overlay = Overlay.of(context);
+    final overlayEntry = OverlayEntry(
+      builder: (context) => Positioned(
+        top: 100, // ✨ تحدد الموقع الرأسي الجديد
+        left: 20,
+        right: 20,
+        child: Material(
+          color: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+            decoration: BoxDecoration(
+              color: backgroundColor,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.3),
+                  blurRadius: 6,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Text(
+              message,
+              style: const TextStyle(color: Colors.white, fontSize: 16),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    overlay.insert(overlayEntry);
+
+    // إزالة الرسالة بعد مدة قصيرة
+    Future.delayed(const Duration(seconds: 2, milliseconds: 500), () {
+      overlayEntry.remove();
+    });
+  }
+
 
   void _updateSuggestedPrice() {
     _suggestedPrice = _getSuggestedPrice(_selectedWashType, _selectedCarSize);
@@ -134,14 +171,7 @@ class __AddTransactionDialogContentState extends State<_AddTransactionDialogCont
     ));
 
     Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('تمت إضافة المعاملة بنجاح'),
-        backgroundColor: _primaryColor,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
+    showCustomSnackBar(context, 'تمت إضافة المعاملة بنجاح');
   }
 
   @override

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:royalcenter/models/wash_transaction.dart';
 import 'package:royalcenter/pages/budget_management_screen.dart';
@@ -9,16 +10,18 @@ import 'package:royalcenter/utils/filter_dialog_utils.dart';
 import 'package:royalcenter/utils/statistics_card.dart';
 import 'package:royalcenter/utils/transactions_table.dart';
 import 'package:royalcenter/utils/wash_type_utils.dart';
-import 'package:royalcenter/widgets/budget_tables.dart';
 import 'package:royalcenter/widgets/custom_app_bar.dart';
-import 'package:royalcenter/widgets/save_dialog_utils.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-class DashboardScreen extends StatefulWidget {
+class DashboardPage extends StatefulWidget {
+  final VoidCallback onLogout;
+  const DashboardPage({super.key, required this.onLogout});
+
   @override
-  _DashboardScreenState createState() => _DashboardScreenState();
+  _DashboardPageState createState() => _DashboardPageState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> {
+class _DashboardPageState extends State<DashboardPage> {
   List<DailyRecord> dailyRecords = [];
   List<DailyStatistics> dailyStatistics = [];
   List<WashTransaction> todayTransactions = [];
@@ -41,20 +44,74 @@ class _DashboardScreenState extends State<DashboardScreen> {
   final ScrollController _scrollController = ScrollController();
   final Color _primaryColor = Colors.teal;
   final Color _secondaryColor = Colors.blueGrey;
-  final Color _accentColor = Colors.orange;
 
   @override
   void initState() {
     super.initState();
-    _loadInitialData();
-    filteredTransactions = List.from(todayTransactions);
+    _loadAllData();
     searchController.addListener(_filterTransactions);
   }
 
-  Future<void> _loadInitialData() async {
+  // تحميل جميع البيانات المحفوظة
+  Future<void> _loadAllData() async {
     setState(() => _isLoading = true);
-    await Future.delayed(Duration(milliseconds: 500));
+
+    final prefs = await SharedPreferences.getInstance();
+
+    // تحميل المعاملات
+    final transactionsJson = prefs.getString('transactions');
+    if (transactionsJson != null) {
+      final List<dynamic> transactionsList = jsonDecode(transactionsJson);
+      setState(() {
+        todayTransactions = transactionsList.map((e) => WashTransaction.fromJson(e)).toList();
+      });
+    }
+
+    // تحميل عداد المعاملات
+    _transactionCounter = prefs.getInt('transactionCounter') ?? 1;
+
+    // تحميل المصاريف
+    final expensesJson = prefs.getString('expenses');
+    if (expensesJson != null) {
+      final List<dynamic> expensesList = jsonDecode(expensesJson);
+      setState(() {
+        expenses = expensesList.map((e) => Expense.fromJson(e)).toList();
+      });
+    }
+
+    // تحميل السحوبات
+    setState(() {
+      owner1Withdrawn = prefs.getDouble('owner1Withdrawn') ?? 0;
+      owner2Withdrawn = prefs.getDouble('owner2Withdrawn') ?? 0;
+      owner1WithdrawnController.text = owner1Withdrawn.toStringAsFixed(2);
+      owner2WithdrawnController.text = owner2Withdrawn.toStringAsFixed(2);
+    });
+
+    // تحديث القائمة المصفاة
+    filteredTransactions = List.from(todayTransactions);
+    _sortTransactions();
+
     setState(() => _isLoading = false);
+  }
+
+  // حفظ جميع البيانات
+  Future<void> _saveAllData() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    // حفظ المعاملات
+    final transactionsJson = todayTransactions.map((e) => e.toJson()).toList();
+    await prefs.setString('transactions', jsonEncode(transactionsJson));
+
+    // حفظ عداد المعاملات
+    await prefs.setInt('transactionCounter', _transactionCounter);
+
+    // حفظ المصاريف
+    final expensesJson = expenses.map((e) => e.toJson()).toList();
+    await prefs.setString('expenses', jsonEncode(expensesJson));
+
+    // حفظ السحوبات
+    await prefs.setDouble('owner1Withdrawn', owner1Withdrawn);
+    await prefs.setDouble('owner2Withdrawn', owner2Withdrawn);
   }
 
   @override
@@ -120,21 +177,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
   }
 
-  void _addTransaction(WashTransaction transaction) {
+  _addTransaction(WashTransaction transaction) async {
     setState(() {
       todayTransactions.add(transaction);
       _transactionCounter++;
       _filterTransactions();
     });
+
+    // حفظ جميع البيانات بعد إضافة معاملة جديدة
+    await _saveAllData();
   }
 
   void _printTransaction(WashTransaction transaction) {
     InvoiceService.showArabicPDFInvoice(context, transaction);
-  }
-
-  // دالة لحساب إجمالي المصاريف
-  double _calculateExpensesTotal() {
-    return expenses.fold(0, (sum, expense) => sum + expense.amount);
   }
 
   void _openBudgetManagement() async {
@@ -144,12 +199,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
       context,
       MaterialPageRoute(
         builder: (context) => BudgetManagementScreen(
+          dailyRecords: dailyRecords,
           expenses: expenses,
           owner1Withdrawn: owner1Withdrawn,
           owner2Withdrawn: owner2Withdrawn,
           onExpensesChanged: (newExpenses) {
             setState(() {
               expenses = newExpenses;
+              _saveAllData(); // حفظ جميع البيانات بعد التغيير
             });
           },
           onWithdrawalsChanged: (owner1, owner2) {
@@ -158,216 +215,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
               owner2Withdrawn = owner2;
               owner1WithdrawnController.text = owner1.toStringAsFixed(2);
               owner2WithdrawnController.text = owner2.toStringAsFixed(2);
+              _saveAllData(); // حفظ جميع البيانات بعد التغيير
             });
           },
           totalIncome: totalIncome,
           transactions: todayTransactions,
-        ),
-      ),
-    );
-  }
-
-  Future<void> _saveDailyRecord() async {
-    if (todayTransactions.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('لا توجد معاملات ليوم اليوم'),
-          backgroundColor: Colors.orange,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-      );
-      return;
-    }
-
-    double totalIncome = todayTransactions.fold(0, (sum, transaction) => sum + transaction.price);
-    int totalCars = todayTransactions.length;
-    double expensesTotal = _calculateExpensesTotal();
-
-    Map<WashType, int> washTypeCounts = {
-      WashType.external: 0,
-      WashType.internal: 0,
-      WashType.engine: 0,
-      WashType.undercarriage: 0,
-      WashType.seats: 0,
-      WashType.complete: 0,
-    };
-
-    for (var transaction in todayTransactions) {
-      washTypeCounts[transaction.washType] = washTypeCounts[transaction.washType]! + 1;
-    }
-
-    showDialog(
-      context: context,
-      builder: (context) => Directionality(
-        textDirection: TextDirection.rtl,
-        child: Dialog(
-          backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Text(
-                      'تأكيد الحفظ',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 20,
-                        color: _primaryColor,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // جدول الموازنة
-                  BudgetTables.buildBudgetTable(
-                    totalIncome,
-                    expensesTotal,
-                    owner1Withdrawn,
-                    owner2Withdrawn,
-                    _primaryColor,
-                  ),
-
-                  const SizedBox(height: 16),
-                  Text(
-                    'تفاصيل أنواع الغسيل:',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: _secondaryColor,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  SaveDialogUtils.buildWashTypeItem('خارجي', washTypeCounts[WashType.external]!, Colors.blue, _primaryColor),
-                  SaveDialogUtils.buildWashTypeItem('داخلي', washTypeCounts[WashType.internal]!, Colors.green, _primaryColor),
-                  SaveDialogUtils.buildWashTypeItem('محرك', washTypeCounts[WashType.engine]!, Colors.orange, _primaryColor),
-                  SaveDialogUtils.buildWashTypeItem('سفلي', washTypeCounts[WashType.undercarriage]!, Colors.purple, _primaryColor),
-                  SaveDialogUtils.buildWashTypeItem('كراسي', washTypeCounts[WashType.seats]!, Colors.red, _primaryColor),
-                  SaveDialogUtils.buildWashTypeItem('كامل', washTypeCounts[WashType.complete]!, _primaryColor, _primaryColor),
-
-                  const SizedBox(height: 20),
-                  Text(
-                    'هل تريد حفظ سجل اليوم؟',
-                    style: TextStyle(
-                      color: _secondaryColor,
-                      fontSize: 16,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () => Navigator.pop(context),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            side: BorderSide(color: _secondaryColor),
-                          ),
-                          child: Text(
-                            'إلغاء',
-                            style: TextStyle(color: _secondaryColor),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () async {
-                            Navigator.pop(context);
-                            setState(() => _isLoading = true);
-
-                            // حساب صافي الدخل وحصص المالكين
-                            double netIncome = totalIncome - expensesTotal;
-                            double owner1Share = netIncome / 2;
-                            double owner2Share = netIncome / 2;
-
-                            // حساب الباقي
-                            double remainingMoney = netIncome - (owner1Withdrawn + owner2Withdrawn);
-
-                            await Future.delayed(Duration(milliseconds: 800));
-
-                            setState(() {
-                              dailyRecords.add(DailyRecord(
-                                date: DateTime.now(),
-                                totalIncome: totalIncome,
-                                employees: [],
-                                owner1Share: owner1Share,
-                                owner2Share: owner2Share,
-                                expenses: List.from(expenses),
-                                remainingMoney: remainingMoney,
-                                owner1Withdrawn: owner1Withdrawn,
-                                owner2Withdrawn: owner2Withdrawn,
-                                generalNotes: '',
-                                transactions: List.from(todayTransactions),
-                              ));
-
-                              // حفظ الإحصائيات
-                              DailyStatistics stats = DailyStatistics(
-                                date: DateTime.now(),
-                                totalIncome: totalIncome,
-                                totalCars: totalCars,
-                                washTypeCounts: Map.from(washTypeCounts),
-                                employees: [],
-                                owner1Share: owner1Share,
-                                owner2Share: owner2Share,
-                                expenses: List.from(expenses),
-                                remainingMoney: remainingMoney,
-                                owner1Withdrawn: owner1Withdrawn,
-                                owner2Withdrawn: owner2Withdrawn,
-                                generalNotes: '',
-                                transactions: List.from(todayTransactions),
-                              );
-
-                              dailyStatistics.add(stats);
-
-                              // إعادة تعيين البيانات
-                              todayTransactions.clear();
-                              expenses.clear();
-                              owner1Withdrawn = 0;
-                              owner2Withdrawn = 0;
-                              owner1WithdrawnController.clear();
-                              owner2WithdrawnController.clear();
-                              _transactionCounter = 1;
-                              _filterTransactions();
-                              _isLoading = false;
-                            });
-
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('تم حفظ سجل اليوم بنجاح'),
-                                backgroundColor: Colors.green,
-                                behavior: SnackBarBehavior.floating,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              ),
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: _primaryColor,
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: Text('تأكيد الحفظ'),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
         ),
       ),
     );
@@ -384,7 +236,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void _clearAllTransactions() {
     showClearAllTransactionsDialog(
       context: context,
-      onClear: () {
+      onClear: () async {
         setState(() {
           todayTransactions.clear();
           filteredTransactions.clear();
@@ -395,6 +247,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
           owner2WithdrawnController.clear();
           _transactionCounter = 1;
         });
+
+        // مسح جميع البيانات المحفوظة
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove('transactions');
+        await prefs.remove('transactionCounter');
+        await prefs.remove('expenses');
+        await prefs.remove('owner1Withdrawn');
+        await prefs.remove('owner2Withdrawn');
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('تم مسح جميع المعاملات والمصاريف'),
@@ -405,6 +266,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
         );
       },
     );
+  }
+
+  // دالة تسجيل الخروج
+  Future<void> _logout() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('isLoggedIn', false);
+    widget.onLogout();
   }
 
   @override
@@ -430,8 +298,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         backgroundColor: Colors.grey[50],
         appBar: CustomAppBar(
           hasTransactions: todayTransactions.isNotEmpty,
-          onSave: _saveDailyRecord,
           onClear: _clearAllTransactions,
+          onLogout: _logout,
         ),
         floatingActionButton: _buildFloatingActionButtons(),
         body: _isLoading
@@ -444,7 +312,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             : RefreshIndicator(
           color: _primaryColor,
           onRefresh: () async {
-            await _loadInitialData();
+            await _loadAllData();
           },
           child: SingleChildScrollView(
             controller: _scrollController,
@@ -468,7 +336,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // بناء أزرار الفعل العائمة
   Widget _buildFloatingActionButtons() {
     return Column(
       mainAxisAlignment: MainAxisAlignment.end,
@@ -489,6 +356,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           ),
         FloatingActionButton(
+          heroTag: 'add_transaction',
           onPressed: _showAddTransactionDialog,
           child: Icon(Icons.add, size: 28),
           backgroundColor: _primaryColor,
@@ -501,7 +369,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // بناء قسم البحث والتصفية
   Widget _buildSearchAndFilterSection() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12),
@@ -554,7 +421,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // بناء محتوى المعاملات
   Widget _buildTransactionsContent() {
     return todayTransactions.isEmpty
         ? _buildEmptyState()
@@ -562,17 +428,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
       transactions: filteredTransactions,
       sortColumn: sortColumn,
       sortAscending: sortAscending,
-      onDelete: (transaction) {
+      onDelete: (transaction) async {
         setState(() {
           todayTransactions.remove(transaction);
           _filterTransactions();
         });
+        // حفظ البيانات بعد الحذف
+        await _saveAllData();
       },
       onPrint: _printTransaction,
     );
   }
 
-  // بناء واجهة الحالة الفارغة
   Widget _buildEmptyState() {
     return Container(
       height: MediaQuery.of(context).size.height * 0.6,

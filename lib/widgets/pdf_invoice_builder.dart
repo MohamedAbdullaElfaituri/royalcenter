@@ -130,9 +130,15 @@ class PdfInvoiceBuilder {
                     pw.SizedBox(height: 6),
                     pw.Row(
                       children: [
-                        pw.Icon(pw.IconData(0), size: 10, color: _secondaryColor),
                         pw.SizedBox(width: 4),
-                        pw.Text("1234567890", style: normalStyle.copyWith(fontSize: 9)),
+                        pw.Text("0920133085 الزبير بالتمر ", style: normalStyle.copyWith(fontSize: 9)),
+                      ],
+                    ),
+                    pw.SizedBox(height: 2),
+                    pw.Row(
+                      children: [
+                        pw.SizedBox(width: 4),
+                        pw.Text("0918847217 فراس بالتمر ", style: normalStyle.copyWith(fontSize: 9)),
                       ],
                     ),
                   ],
@@ -345,44 +351,6 @@ class PdfInvoiceBuilder {
                     transaction.notes.isNotEmpty ? transaction.notes : 'لا توجد ملاحظات',
                     style: normalStyle.copyWith(fontSize: 10, color: _secondaryColor),
                   ),
-                ),
-              ],
-            ),
-          ),
-
-          pw.SizedBox(height: 16),
-
-          /// ⚫ الفوتر (Footer)
-          pw.Container(
-            padding: const pw.EdgeInsets.all(16),
-            decoration: pw.BoxDecoration(
-              borderRadius: pw.BorderRadius.circular(8),
-              border: pw.Border.all(color: _borderColor, width: 0.5),
-            ),
-            child: pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.center,
-              children: [
-                pw.Text("شكراً لثقتكم",
-                  style: footerStyle.copyWith(
-                    color: _primaryColor,
-                    fontSize: 12,
-                    fontStyle: pw.FontStyle.italic,
-                    fontWeight: pw.FontWeight.bold,
-                  ),
-                ),
-                pw.SizedBox(height: 6),
-                pw.Text("نتمنى لكم تجربة ممتعة",
-                  style: footerStyle.copyWith(fontSize: 9, color: _secondaryColor),
-                ),
-                pw.SizedBox(height: 8),
-                pw.Divider(color: _borderColor, height: 0.5),
-                pw.SizedBox(height: 8),
-                pw.Row(
-                  mainAxisAlignment: pw.MainAxisAlignment.spaceAround,
-                  children: [
-                    pw.Text("هاتف: 1234567890", style: footerStyle),
-                    pw.Text("البريد الإلكتروني: info@royal-center.com", style: footerStyle),
-                  ],
                 ),
               ],
             ),

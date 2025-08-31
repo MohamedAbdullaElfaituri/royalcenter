@@ -4,11 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:royalcenter/pages/dashboard_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/animated_background.dart';
-import '../widgets/left_panel.dart' hide LeftPanel;
+import '../widgets/left_panel.dart';
 import '../widgets/login_form.dart';
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+  final VoidCallback onLogin;
+  const LoginPage({super.key, required this.onLogin});
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -28,7 +29,8 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
 
     // فتح animation عند بداية الصفحة
     Timer(const Duration(milliseconds: 300), () {
-      _cardController.forward();
+      if (mounted){
+      _cardController.forward();}
     });
   }
 
@@ -45,10 +47,8 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
 
     if (!mounted) return;
 
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) =>  DashboardScreen()),
-    );
+    // إخطار التطبيق الرئيسي بتحديث حالة تسجيل الدخول
+    widget.onLogin();
   }
 
   @override
@@ -58,21 +58,14 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
     return Scaffold(
       body: Stack(
         children: [
-          // خلفية متدرجة متحركة
-          const AnimatedBackground(),
-
-          // نقاط ضوئية متحركة
-          Positioned.fill(
-            child: IgnorePointer(
-              child: Align(
-                alignment: Alignment.topCenter,
-                child: Opacity(
-                  opacity: 0.15,
-                  child: ImageFiltered(
-                    imageFilter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
-                    child: const Icon(Icons.local_car_wash_rounded, size: 420),
-                  ),
-                ),
+          // 🔹 خلفية بتدرج أزرق
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFF0D47A1), Color(0xFF1976D2)],
+                // أزرق غامق إلى فاتح
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
             ),
           ),
@@ -94,7 +87,10 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                           begin: const Offset(0.3, 0),
                           end: Offset.zero,
                         ).animate(
-                          CurvedAnimation(parent: _cardController, curve: Curves.easeOut),
+                          CurvedAnimation(
+                              parent: _cardController,
+                              curve: Curves.easeOut
+                          ),
                         ),
                         child: const LeftPanel(),
                       ),
@@ -110,9 +106,12 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                           begin: const Offset(-0.3, 0),
                           end: Offset.zero,
                         ).animate(
-                          CurvedAnimation(parent: _cardController, curve: Curves.easeOut),
+                          CurvedAnimation(
+                              parent: _cardController,
+                              curve: Curves.easeOut
+                          ),
                         ),
-                        // 🔹 هنا مررت callback
+                        // 🔹 مررت callback مع onLoginSuccess
                         child: LoginForm(onLoginSuccess: _onLoginSuccess),
                       ),
                     ),

@@ -1,22 +1,42 @@
 import 'package:flutter/material.dart';
 import 'package:royalcenter/pages/dashboard_page.dart';
+import 'package:royalcenter/pages/login_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'pages/login_page.dart';
-
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // تحميل البيانات المحفوظة
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
-
-  runApp(MyApp(isLoggedIn: isLoggedIn));
+  runApp(MyApp());
 }
 
-class MyApp extends StatelessWidget {
-  final bool isLoggedIn;
-  const MyApp({super.key, required this.isLoggedIn});
+class MyApp extends StatefulWidget {
+  const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  bool _isLoggedIn = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkLoginStatus();
+  }
+
+  Future<void> _checkLoginStatus() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+    });
+  }
+
+  // دالة لتحديث حالة تسجيل الدخول
+  void _updateLoginStatus(bool isLoggedIn) {
+    setState(() {
+      _isLoggedIn = isLoggedIn;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +49,9 @@ class MyApp extends StatelessWidget {
       ),
       home: Directionality(
         textDirection: TextDirection.rtl,
-        child: isLoggedIn ?  DashboardScreen() : const LoginPage(),
+        child: _isLoggedIn
+            ? DashboardPage(onLogout: () => _updateLoginStatus(false))
+            : LoginPage(onLogin: () => _updateLoginStatus(true)),
       ),
     );
   }
